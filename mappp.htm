@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8">
+    <title>Gugrontid map</title>
+    <style>
+     html, body {
+       width:  100%;
+       height: 100%;
+       margin: 0px;
+     }
+    </style>
+  </head>
+
+  <body>
+    <canvas id="map_canvas"></canvas>
+
+    <script>
+     /**
+      * Loads map image to canvas and place markers.
+      */
+
+     //This array contains positions of markers
+     var markers = { 
+       content: [{
+         name: "Characters",
+         description: "NPCs like monsters, quest givers, trainers, traders etc.",
+         image: "char.gif",
+         content: [{
+           name: "Guy Dudesson",
+           location: [32, 135]
+         }, {
+           name: "Troll Lolo",
+           location: [133, 337]
+         }, {
+           name: "Parker Peters",
+           location: [400, 23]
+         }, {
+           name: "Mr. X",
+           loction: [532, 123]
+         }]
+       }, {
+         name: "Location markers",
+         description: "Places to mine, crafing places, portals, point of intresst etc."
+         content: [{
+           name: "Crafting places",
+           content: [{
+             image: "craft.gif",
+             name: "Work bench",
+             location: [[200, 200], [200, 300], [450, 129]]
+           }, {
+             image: "craft.gif",
+             name: "Sock maker",
+             location: [232, 312]
+           }, {
+             image: "craft.gif",
+             name: "Fire bender",
+             location: [275, 200]
+           }]
+         }, {
+           name: "Mining places",
+           image: "gather.gif",
+           content: [{
+             name: "Gold",
+             location: [[321, 123], [32, 400]]
+           }, {
+             name: "Silver",
+             location: [666, 432]
+           }, {
+             name: "Diamonds",
+             location: [311, 164]
+           }]
+         }]
+       }]
+     };
+
+     //Custom user settings
+     //Hidden map markers
+     var hidden_markers = [markers.content[0]];
+
+     //Static settings
+     //Where to find position 0, 0 in the world
+     var COORD_X = 0;
+     var COORD_Y = 0;
+     var STEP_X = 50; //How far is 100 steps in X
+     var STEP_Y = 75; //How far is 100 steps in Y
+     //Map image
+     var mapimg = 'gugrontid.jpg';
+
+     /***/
+
+     var c = document.getElementById("map_canvas");
+     var ctx = c.getContext("2d");
+
+     //Load the map
+     var imageObj = new Image();
+
+     imageObj.onload = function() {
+       setInterval(function() {
+         draw();
+       }, 200);
+     };
+
+     imageObj.src = mapimg;
+
+     var drawables = [];
+     var imageMap = []; //Stores images for reuse
+
+     //Name indexed array to put the tree nodes seqentially in the depth first manner
+     var markerFlatMap = {};
+
+     //Prepare the markers array
+     recursiveMarkerPrep(markers);
+
+     /***/
+     
+     /**
+      * Recursive tree loop function, for the markers. This works directly on the object.
+      *
+      * @param {array} parentGroup  The current marker group to fetch content from
+      */
+     function recursiveMarkerPrep(parentGroup) {
+       //Fuse togheter the spaces to create the name
+       parentGroup.indexName = str.replace(/\s+/g, parentGroup.name);
+       //Are there already one such name? Then add a number to it
+       if(markerFlatMap[parentGroup.indexName] != null) {
+         parentGroup.indexName += markerFlatMap.length;
+       }
+
+       //Location means there are something to put in drawables
+       if(parentGroup.location != null) {
+         //Location could be an array, be aware!
+         var locations = parentGroup.location;
+
+         if(!Array.isArray(parentGroup.location[0])) {
+           locations = [parentGroup.location];
+         }
+
+         var icoObj = null;
+
+         //See if there are a reusable image available
+         for(var i = 0; i < imageMap.length; i++) {
+           if(imageMap[i].src == parentGroup.img) {
+             icoObj = imageMap[i];
+             break;
+           }
+         }
+
+         if(icoObj == null) {
+           icoObj = new Image();
+
+           icoObj.src = parentGroup.img;
+
+           imageMap.push(icoObj);
+         }
+
+         for(var i = 0; i < locations.length; i++) {
+           drawables.push({
+             indexName: parentGroup.indexName, 
+             image: icoObj,
+             x: locations[i][0],
+             y: locations[i][1]
+           });
+         }
+       }
+
+       //Add this to the flat map
+       markerFlatMap[parentGroup.indexName] = parentGroup;
+
+       //Loop through content, do the same process
+       if(parentGroup.content != null) {
+         for(var i = 0; i < parentGroup.content.length; i++) {
+           //Are there a image icon? Else try to fetch it from the parent group!
+           if(parentGroup.content[i].img == null) {
+             parentGroup.content[i].img = parentGroup.img;
+           }
+
+           //Ref back to content
+
+           recursiveMarkerPrep(parentGroup.content[i]);
+         }
+       }
+     }
+
+     /**
+      * Draw loop, update map whe resized
+      */
+     function draw() {
+       ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+
+       ctx.canvas.width  = window.innerWidth;
+       ctx.canvas.height = window.innerHeight;
+
+       //Scale the map to the screen
+       var ih = imageObj.height;
+       var iw = imageObj.width;
+
+       //The map should retain its aspect ratio
+       var aspect_ratio = iw / ih;
+
+       var nh = ctx.canvas.height;
+       var nw = nh * aspect_ratio;
+       var nx = (ctx.canvas.width - nw) / 2;
+       var ny = 0;
+       
+       if(nw > ctx.canvas.width) {
+         nw = ctx.canvas.width;
+         nh = nw / aspect_ratio;
+         ny = (ctx.canvas.height - nh) / 2;
+         nx = 0
+       }
+
+       ctx.drawImage(imageObj, nx, ny, nw, nh);
+     }
+    </script>
+  </body>
+</html> 
