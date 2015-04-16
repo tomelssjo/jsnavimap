@@ -153,9 +153,10 @@
        var icoObj = null;
 
        //See if there are a reusable image available
-       for(var i = 0; i < imageMap.length; i++) {
-         if(imageMap[i].src == markers[i].image) {
-           icoObj = imageMap[i];
+       for(var j = 0; j < imageMap.length; j++) {
+         if(imageMap[j].src.indexOf(markers[i].image, imageMap[j].length - markers[i].image.length)
+           !== -1) {
+           icoObj = imageMap[j];
            break;
          }
        }
