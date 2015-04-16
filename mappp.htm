@@ -225,8 +225,8 @@
        for(var i = 0; i < drawables.length; i++) {
          ctx.drawImage(
            drawables[i].image, 
-           drawables[i].x / scalex,
-           drawables[i].y / scaley);
+           drawables[i].x * scalex + nx,
+           drawables[i].y * scaley + ny);
        }
      }
     </script>
