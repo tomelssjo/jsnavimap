@@ -9,11 +9,31 @@
        height: 100%;
        margin: 0px;
      }
+
+     #map_links {
+       position: absolute;
+       background-color: rgba(149, 193, 168, 0.6);
+       left: 0;
+       top: 0;
+       padding: 5px;
+     }
+
+     #map_links h2 {
+       font-size: 12pt;
+       color: #36114D;
+     }
+
+     #map_links ul {
+       list-style-type: square;
+     }
     </style>
   </head>
 
   <body>
     <canvas id="map_canvas"></canvas>
+    <div id="map_links">
+      
+    </div>
 
     <script>
      /**
@@ -119,7 +139,28 @@
      //Store every marker by a unique key 'name', often similar to the name attribute
      var name_indexed_markers = {};
 
+     //List all categories as HTML elements
+     for (var key in m_categories) {
+       if(m_categories.hasOwnProperty(key)) {
+         //The category object
+         var obj = m_categories[key];
+
+         //Create category header
+         var header = document.createElement('h2');
+         header.appendChild(document.createTextNode(obj.name));
+
+         document.getElementById('map_links').appendChild(header);
+
+         //List where the markers go
+         var list = document.createElement('ul');
+         list.setAttribute('id', 'lst_' + key);
+
+         document.getElementById('map_links').appendChild(list);
+       }
+     }
+
      //Put the markers in the draw array
+     //and in the HTML list as links
      for(var i = 0; i < markers.length; i++) {
        //Fuse togheter the spaces to create the name
        markers[i].indexName = markers[i].name.replace(/\s+/g, '_');
@@ -179,6 +220,14 @@
              y: locations[j][1]
            });
        }
+
+       //Add to the HTML list
+       //TODO: Maybe one marker can have several catergories, add to them all
+       var html_list_item = document.createElement('li');
+       html_list_item.appendChild(document.createTextNode(markers[i].name));
+       html_list_item.style["list-style-image"] = "url(" + markers[i].image  + ")";
+
+       document.getElementById('lst_' + markers[i].category).appendChild(html_list_item);
      }
 
      //Calculate scale
