@@ -20,64 +20,74 @@
       * Loads map image to canvas and place markers.
       */
 
-     //This array contains positions of markers
-     var markers = {
-       name: 'root',
-       content: [{
+     //The categories of the markers
+     var m_categories = {
+       characters: {
          name: "Characters",
          description: "NPCs like monsters, quest givers, trainers, traders etc.",
-         image: "char.gif",
-         content: [{
-           name: "Guy Dudesson",
-           location: [32, 135]
-         }, {
-           name: "Troll Lolo",
-           location: [133, 337]
-         }, {
-           name: "Parker Peters",
-           location: [400, 23]
-         }, {
-           name: "Mr. X",
-           loction: [532, 123]
-         }]
-       }, {
-         name: "Location markers",
-         description: "Places to mine, crafing places, portals, point of intresst etc.",
-         content: [{
-           name: "Crafting places",
-           content: [{
-             image: "craft.gif",
-             name: "Work bench",
-             location: [[200, 200], [200, 300], [450, 129]]
-           }, {
-             image: "craft.gif",
-             name: "Sock maker",
-             location: [232, 312]
-           }, {
-             image: "craft.gif",
-             name: "Fire bender",
-             location: [275, 200]
-           }]
-         }, {
-           name: "Mining places",
-           image: "gather.gif",
-           content: [{
-             name: "Gold",
-             location: [[321, 123], [32, 400]]
-           }, {
-             name: "Silver",
-             location: [666, 432]
-           }, {
-             name: "Diamonds",
-             location: [311, 164]
-           }]
-         }]
-       }]
+         def_image: "char.gif"
+       },
+       crafting_places: {
+         name: "Crafting places"
+       },
+       mining_places: {
+         name: "Mining places",
+         def_image: "gather.gif"
+       }
      };
+
+     //This array contains positions of markers
+     var markers = [{
+       name: "Guy Dudesson",
+       location: [32, 135],
+       category: 'characters'
+     }, {
+       name: "Troll Lolo",
+       location: [133, 337],
+       category: 'characters'
+     }, {
+       name: "Parker Peters",
+       location: [400, 23],
+       category: 'characters'
+     }, {
+       name: "Mr. X",
+       location: [532, 123],
+       category: 'characters'
+     }, {
+
+       image: "craft.gif",
+       name: "Work bench",
+       location: [[200, 200], [200, 300], [450, 129]],
+       category: 'crafting_places'
+     }, {
+       image: "craft.gif",
+       name: "Sock maker",
+       location: [232, 312],
+       category: 'crafting_places'
+     }, {
+       image: "craft.gif",
+       name: "Fire bender",
+       location: [275, 200],
+       category: 'crafting_places'
+     }, {
+
+       name: "Gold",
+       location: [[321, 123], [32, 400]],
+       category: 'mining_places'
+     }, {
+       name: "Silver",
+       location: [666, 432],
+       category: 'mining_places'
+     }, {
+       name: "Diamonds",
+       location: [311, 164],
+       category: 'mining_places'
+     }];
 
      //Custom user settings
      //Hidden map markers
-     var hidden_markers = [markers.content[0]];
+     var hidden_categories = ['characters'];
+     var hidden_markers = [];
 
      //Static settings
      //Where to find position 0, 0 in the world
@@ -106,85 +116,74 @@
      var drawables = [];
      var imageMap = []; //Stores images for reuse
 
-     //Name indexed array to put the tree nodes seqentially in the depth first manner
-     var markerFlatMap = {};
+     //Store every marker by a unique key 'name', often similar to the name attribute
+     var name_indexed_markers = {};
 
-     //Prepare the markers array
-     recursiveMarkerPrep(markers);
+     //Put the markers in the draw array
+     for(var i = 0; i < markers.length; i++) {
+       //Fuse togheter the spaces to create the name
+       markers[i].indexName = markers[i].name.replace(/\s+/g, '_');
+       //Remove special characters
+       markers[i].indexName = markers[i].indexName.replace(/\.+/g, '');
+       markers[i].indexName = markers[i].indexName.toLowerCase();
+
+       //Are there already one such name? Then add a number to it
+       if(name_indexed_markers[markers[i].indexName] != null) {
+         markers[i].indexName += name_indexed_markers.length;
+       }
+
+       //Put the marker in the index array
+       name_indexed_markers[markers[i].indexName] = markers[i];
+
+       //Location means there are something to put in drawables
+       //Location could be an array, be aware!
+       var locations = markers[i].location;
+
+       //Since location stores the value in format [x, y]
+       //it is needed to warp it in an array so the single positions do not got looped through
+       if(!Array.isArray(markers[i].location[0])) {
+         locations = [markers[i].location];
+       }
+
+       //Do the marker have an image, else fetch a default one
+       if(markers[i].image == null) {
+         markers[i].image = m_categories[markers[i].category].def_image;
+       }
+
+       var icoObj = null;
+
+       //See if there are a reusable image available
+       for(var i = 0; i < imageMap.length; i++) {
+         if(imageMap[i].src == markers[i].image) {
+           icoObj = imageMap[i];
+           break;
+         }
+       }
+
+       //Store the image for future use
+       if(icoObj == null) {
+         icoObj = new Image();
+
+         icoObj.src = markers[i].image;
+
+         imageMap.push(icoObj);
+       }
+
+       //Put every location in the drawable array
+       for(var j = 0; j < locations.length; j++) {
+           drawables.push({
+             indexName: markers[i].indexName, 
+             image: icoObj,
+             x: locations[j][0],
+             y: locations[j][1]
+           });
+       }
+     }
 
      //Calculate scale
      var scale = SCALE / 100;
 
      /***/
-     
-     /**
-      * Recursive tree loop function, for the markers. This works directly on the object.
-      *
-      * @param {array} parentGroup  The current marker group to fetch content from
-      */
-     function recursiveMarkerPrep(parentGroup) {
-       //Fuse togheter the spaces to create the name
-       parentGroup.indexName = parentGroup.name.replace(/\s+/g, '');
-       //Are there already one such name? Then add a number to it
-       if(markerFlatMap[parentGroup.indexName] != null) {
-         parentGroup.indexName += markerFlatMap.length;
-       }
-
-       //Location means there are something to put in drawables
-       if(parentGroup.location != null) {
-         //Location could be an array, be aware!
-         var locations = parentGroup.location;
-
-         if(!Array.isArray(parentGroup.location[0])) {
-           locations = [parentGroup.location];
-         }
-
-         var icoObj = null;
-
-         //See if there are a reusable image available
-         for(var i = 0; i < imageMap.length; i++) {
-           if(imageMap[i].src == parentGroup.image) {
-             icoObj = imageMap[i];
-             break;
-           }
-         }
-
-         if(icoObj == null) {
-           icoObj = new Image();
-
-           icoObj.src = parentGroup.image;
-
-           imageMap.push(icoObj);
-         }
-
-         for(var i = 0; i < locations.length; i++) {
-           drawables.push({
-             indexName: parentGroup.indexName, 
-             image: icoObj,
-             x: locations[i][0],
-             y: locations[i][1]
-           });
-         }
-       }
-
-       //Add this to the flat map
-       markerFlatMap[parentGroup.indexName] = parentGroup;
-
-       //Loop through content, do the same process
-       if(parentGroup.content != null) {
-         for(var i = 0; i < parentGroup.content.length; i++) {
-           //Are there a image icon? Else try to fetch it from the parent group!
-           if(parentGroup.content[i].image == null) {
-             parentGroup.content[i].image = parentGroup.image;
-           }
-
-           //Ref back to parent
-           parentGroup.content[i].parent = parentGroup;
-
-           recursiveMarkerPrep(parentGroup.content[i]);
-         }
-       }
-     }
 
      /**
       * Draw loop, update map whe resized
