@@ -21,7 +21,8 @@
       */
 
      //This array contains positions of markers
-     var markers = { 
+     var markers = {
+       name: 'root',
        content: [{
          name: "Characters",
          description: "NPCs like monsters, quest givers, trainers, traders etc.",
@@ -41,7 +42,7 @@
          }]
        }, {
          name: "Location markers",
-         description: "Places to mine, crafing places, portals, point of intresst etc."
+         description: "Places to mine, crafing places, portals, point of intresst etc.",
          content: [{
            name: "Crafting places",
            content: [{
@@ -82,8 +83,7 @@
      //Where to find position 0, 0 in the world
      var COORD_X = 0;
      var COORD_Y = 0;
-     var STEP_X = 50; //How far is 100 steps in X
-     var STEP_Y = 75; //How far is 100 steps in Y
+     var SCALE = 50; //How far is 100 steps is on the map
      //Map image
      var mapimg = 'gugrontid.jpg';
 
@@ -93,15 +93,15 @@
      var ctx = c.getContext("2d");
 
      //Load the map
-     var imageObj = new Image();
+     var mapObj = new Image();
 
-     imageObj.onload = function() {
+     mapObj.onload = function() {
        setInterval(function() {
          draw();
        }, 200);
      };
 
-     imageObj.src = mapimg;
+     mapObj.src = mapimg;
 
      var drawables = [];
      var imageMap = []; //Stores images for reuse
@@ -112,6 +112,9 @@
      //Prepare the markers array
      recursiveMarkerPrep(markers);
 
+     //Calculate scale
+     var scale = SCALE / 100;
+
      /***/
      
      /**
@@ -121,7 +124,7 @@
       */
      function recursiveMarkerPrep(parentGroup) {
        //Fuse togheter the spaces to create the name
-       parentGroup.indexName = str.replace(/\s+/g, parentGroup.name);
+       parentGroup.indexName = parentGroup.name.replace(/\s+/g, '');
        //Are there already one such name? Then add a number to it
        if(markerFlatMap[parentGroup.indexName] != null) {
          parentGroup.indexName += markerFlatMap.length;
@@ -140,7 +143,7 @@
 
          //See if there are a reusable image available
          for(var i = 0; i < imageMap.length; i++) {
-           if(imageMap[i].src == parentGroup.img) {
+           if(imageMap[i].src == parentGroup.image) {
              icoObj = imageMap[i];
              break;
            }
@@ -149,7 +152,7 @@
          if(icoObj == null) {
            icoObj = new Image();
 
-           icoObj.src = parentGroup.img;
+           icoObj.src = parentGroup.image;
 
            imageMap.push(icoObj);
          }
@@ -171,11 +174,12 @@
        if(parentGroup.content != null) {
          for(var i = 0; i < parentGroup.content.length; i++) {
            //Are there a image icon? Else try to fetch it from the parent group!
-           if(parentGroup.content[i].img == null) {
-             parentGroup.content[i].img = parentGroup.img;
+           if(parentGroup.content[i].image == null) {
+             parentGroup.content[i].image = parentGroup.image;
            }
 
-           //Ref back to content
+           //Ref back to parent
+           parentGroup.content[i].parent = parentGroup;
 
            recursiveMarkerPrep(parentGroup.content[i]);
          }
@@ -192,8 +196,8 @@
        ctx.canvas.height = window.innerHeight;
 
        //Scale the map to the screen
-       var ih = imageObj.height;
-       var iw = imageObj.width;
+       var ih = mapObj.height;
+       var iw = mapObj.width;
 
        //The map should retain its aspect ratio
        var aspect_ratio = iw / ih;
@@ -210,7 +214,20 @@
          nx = 0
        }
 
-       ctx.drawImage(imageObj, nx, ny, nw, nh);
+       ctx.drawImage(mapObj, nx, ny, nw, nh);
+
+       //Markers
+       //Calculate scaling offset for markers
+       var scalex = (nw / iw);
+       var scaley = (nh / ih);
+
+       //Draw the markers
+       for(var i = 0; i < drawables.length; i++) {
+         ctx.drawImage(
+           drawables[i].image, 
+           drawables[i].x / scalex,
+           drawables[i].y / scaley);
+       }
      }
     </script>
   </body>
