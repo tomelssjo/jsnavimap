@@ -135,6 +135,7 @@
 
      var drawables = [];
      var imageMap = []; //Stores images for reuse
+     var faded_drawables = []; //Array that stores all objects that are to be slightly visible
 
      //Store every marker by a unique key 'name', often similar to the name attribute
      var name_indexed_markers = {};
@@ -224,8 +225,20 @@
        //Add to the HTML list
        //TODO: Maybe one marker can have several catergories, add to them all
        var html_list_item = document.createElement('li');
-       html_list_item.appendChild(document.createTextNode(markers[i].name));
        html_list_item.style["list-style-image"] = "url(" + markers[i].image  + ")";
+
+       //Link to display them on the map
+       var html_link_item = document.createElement('a');
+       html_link_item.setAttribute('href', '#' + markers[i].indexName);
+       html_link_item.appendChild(document.createTextNode(markers[i].name));
+
+       //Event will fade all markers but this
+       html_link_item.addEventListener("click", function() {
+         //Loop through the array, move all that are not selected
+         //those will be less visible
+       });
+
+       html_list_item.appendChild(html_link_item);
 
        document.getElementById('lst_' + markers[i].category).appendChild(html_list_item);
      }
@@ -269,6 +282,12 @@
        //Calculate scaling offset for markers
        var scalex = (nw / iw);
        var scaley = (nh / ih);
+
+       var orginal_alpha = 1;
+       var fade_alpha = 0.5;
+
+       //Fade the markers if one is selected
+       ctx.globalAlpha = orginal_alpha;
 
        //Draw the markers
        for(var i = 0; i < drawables.length; i++) {
