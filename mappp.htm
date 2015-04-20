@@ -117,6 +117,12 @@
      //Map image
      var mapimg = 'gugrontid.jpg';
 
+     //For highlighting markers
+     var orginal_alpha = 1;
+     var fade_alpha = 0.2;
+
+     var ups = 200; //Updates per second
+
      /***/
 
      var c = document.getElementById("map_canvas");
@@ -128,14 +134,13 @@
      mapObj.onload = function() {
        setInterval(function() {
          draw();
-       }, 200);
+       }, ups);
      };
 
      mapObj.src = mapimg;
 
      var drawables = [];
      var imageMap = []; //Stores images for reuse
-     var faded_drawables = []; //Array that stores all objects that are to be slightly visible
 
      //Store every marker by a unique key 'name', often similar to the name attribute
      var name_indexed_markers = {};
@@ -231,11 +236,23 @@
        var html_link_item = document.createElement('a');
        html_link_item.setAttribute('href', '#' + markers[i].indexName);
        html_link_item.appendChild(document.createTextNode(markers[i].name));
+       //Store the item in a data attribute
+       html_link_item.setAttribute('data-drawable', markers[i].indexName);
 
        //Event will fade all markers but this
        html_link_item.addEventListener("click", function() {
+         show_name = this.getAttribute('data-drawable');
+
          //Loop through the array, move all that are not selected
          //those will be less visible
+         for(var j = 0; j < drawables.length; j++) {
+           if(drawables[j].indexName != show_name) {
+             drawables[j].fade = true;
+           }
+           else {
+             drawables[j].fade = false;
+           }
+         }   
        });
 
        html_list_item.appendChild(html_link_item);
@@ -283,14 +300,15 @@
        var scalex = (nw / iw);
        var scaley = (nh / ih);
 
-       var orginal_alpha = 1;
-       var fade_alpha = 0.5;
-
-       //Fade the markers if one is selected
-       ctx.globalAlpha = orginal_alpha;
-
        //Draw the markers
        for(var i = 0; i < drawables.length; i++) {
+         if(drawables[i].fade) {
+           ctx.globalAlpha = fade_alpha;
+         }
+         else {
+           ctx.globalAlpha = orginal_alpha;
+         }
+
          ctx.drawImage(
            drawables[i].image, 
            drawables[i].x * scalex + nx,
