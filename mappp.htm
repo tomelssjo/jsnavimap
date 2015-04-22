@@ -10,7 +10,7 @@
        margin: 0px;
      }
 
-     #map_links {
+     #map_controls {
        position: absolute;
        background-color: rgba(149, 193, 168, 0.6);
        left: 0;
@@ -18,12 +18,12 @@
        padding: 5px;
      }
 
-     #map_links h2 {
+     #map_controls h2 {
        font-size: 12pt;
        color: #36114D;
      }
 
-     #map_links ul {
+     #map_controls ul {
        list-style-type: square;
      }
     </style>
@@ -31,8 +31,13 @@
 
   <body>
     <canvas id="map_canvas"></canvas>
-    <div id="map_links">
-      
+    
+    <div id="map_controls">
+      <div id="map_links">
+      </div>
+
+      <h2>Your position</h2>
+      <input type="text" id="custom_pos" placeholder="region x y">
     </div>
 
     <script>
@@ -119,7 +124,7 @@
 
      //For highlighting markers
      var orginal_alpha = 1;
-     var fade_alpha = 0.2;
+     var fade_alpha = 0.4;
 
      var ups = 200; //Updates per second
 
@@ -236,24 +241,6 @@
        var html_link_item = document.createElement('a');
        html_link_item.setAttribute('href', '#' + markers[i].indexName);
        html_link_item.appendChild(document.createTextNode(markers[i].name));
-       //Store the item in a data attribute
-       html_link_item.setAttribute('data-drawable', markers[i].indexName);
-
-       //Event will fade all markers but this
-       html_link_item.addEventListener("click", function() {
-         show_name = this.getAttribute('data-drawable');
-
-         //Loop through the array, move all that are not selected
-         //those will be less visible
-         for(var j = 0; j < drawables.length; j++) {
-           if(drawables[j].indexName != show_name) {
-             drawables[j].fade = true;
-           }
-           else {
-             drawables[j].fade = false;
-           }
-         }   
-       });
 
        html_list_item.appendChild(html_link_item);
 
@@ -262,6 +249,23 @@
 
      //Calculate scale
      var scale = SCALE / 100;
+
+     //When the url change, set fade the markers in the same manner
+     window.addEventListener("hashchange", function() {
+       //Find the button
+       var show_name = window.location.hash.replace("#", "");
+
+       //Loop through the array, move all that are not selected
+       //those will be less visible
+       for(var j = 0; j < drawables.length; j++) {
+         if(drawables[j].indexName != show_name) {
+           drawables[j].fade = true;
+         }
+         else {
+           drawables[j].fade = false;
+         }
+       }
+     });
 
      /***/
 
