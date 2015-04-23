@@ -122,6 +122,10 @@
      //Map image
      var mapimg = 'gugrontid.jpg';
 
+     //Your marker
+     var here_icon = 'here.gif';
+     var here_indexName = 'here_pos';
+
      //For highlighting markers
      var orginal_alpha = 1;
      var fade_alpha = 0.4;
@@ -267,6 +271,72 @@
        }
      });
 
+     //Plot point when typing in the input box
+     document.getElementById("custom_pos").addEventListener("keyup", function() {
+       //There are several ways to separate coords
+       var pos_string = this.value.split(/[\s,;:]/);
+       //Figure out what been typed in the boxes
+       //This just put the first best value in the first best place
+       var x = null;
+       var y = null;
+       var z = null;
+
+       //See what can be found
+       for(var i = 0; i < pos_string.length; i++) {
+         //Get rid of some junk
+         var cur_string = pos_string[i].replace(/[\[\(\{\)\}\]]/, "");
+
+         //Empty string? Carry on
+         if(cur_string == null || cur_string.length < 1) {
+           continue;
+         }
+
+         //We want a number
+         if(!isNaN(parseFloat(cur_string)) && isFinite(cur_string)) {
+           if(x == null) {
+             x = Math.round(cur_string);
+           }
+           else if(z == null) {
+             z = Math.round(cur_string);
+           }
+           else if(y == null) {
+             y = z;
+             z = Math.round(cur_string);
+           }
+           else {
+             break;
+           }
+         }
+       }
+
+       var here_drawable = null;
+
+       //Try to find the you marker
+       here_drawable = searchByIndexName(drawables, here_indexName);
+
+       //No marker? Create one.
+       if(here_drawable == null) {
+         //TODO: Check if the image already exist
+         var icoObj = new Image();
+
+         icoObj.src = here_icon;
+
+         imageMap.push(icoObj);
+
+         here_drawable = {
+             indexName: here_indexName, 
+             image: icoObj,
+             x: x,
+             y: z
+           };
+
+         drawables.push(here_drawable);
+       }
+
+       here_drawable.x = x;
+       here_drawable.y = z;
+     });
+
      /***/
 
      /**
@@ -318,6 +388,23 @@
            drawables[i].x * scalex + nx,
            drawables[i].y * scaley + ny);
        }
+     }
+
+     /**
+      * Searches in the given array for an item containing the searched indexName.
+      * 
+      * @param {array} search_array  Where the search
+      * @param {string} indexName  What to search for
+      * @returns {Object}  null if nothing found, else the found item
+      */
+     function searchByIndexName(search_array, indexName) {
+       for(var i = 0; i < search_array.length; i++) {
+         if(search_array[i].indexName == indexName) {
+           return search_array[i];
+         }
+       }
+
+                         return null;
      }
     </script>
   </body>
