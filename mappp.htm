@@ -109,6 +109,31 @@
        category: 'mining_places'
      }];
 
+     //Drawmodes for regions, do not change those...
+     var REG_RECT = 1;
+     var REG_POLY = 2;
+     var REG_POLY_LIST = 4;
+     var REG_POINT = 5; //Used to "portal regions" and similar that are not displayed on the map
+
+     //Regions for the map
+     var map_regions = [{
+       indexName: 'testreg1',
+       color: '#ff0145',
+       shape: [REG_RECT, 32, 64, 156, 403]
+     }, {
+       indexName: 'iccreamland',
+       color: '#a22195',
+       shape: [REG_POLY, [200, 2], [200, 300], [400, 300], [400, 250], [300, 250], [300, 2]]
+     }, {
+       indexName: 'stonekor',
+       color: '#238132',
+       shape: [REG_POLY_LIST, [[500, 100], [500, 200], [600, 200], [600, 100]], 
+               [[10, 500], [10, 520], [30, 520], [30, 500]]]
+     }, {
+       indexName: 'ulbergate',
+       shape: [REG_POINT, 500, 34]
+     }];
+
      //Custom user settings
      //Hidden map markers
      var hidden_categories = ['characters'];
