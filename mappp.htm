@@ -361,7 +361,7 @@
        here_drawable.x = x;
        here_drawable.y = z;
      });
-
+     
      /***/
 
      /**
@@ -413,6 +413,69 @@
            drawables[i].x * scalex + nx,
            drawables[i].y * scaley + ny);
        }
+
+       //Regions, not sure if a separate array is needed
+       for(var i = 0; i < map_regions.length; i++) {
+         if(map_regions[i].color != null) {
+           ctx.strokeStyle = map_regions[i].color;
+         }
+         else {
+           ctx.strokeStyle = "#000000";
+         }
+
+         //The first element contain shape type
+         switch(map_regions[i].shape[0]) {
+             case REG_RECT:
+             //Every element contain one of the x1, y1, x2, y2 values
+             ctx.strokeRect(map_regions[i].shape[1] * scalex + nx, 
+                          map_regions[i].shape[2] * scaley + ny,
+                          (map_regions[i].shape[3] * scalex + nx) -
+                            (map_regions[i].shape[1] * scalex + nx), 
+                          (map_regions[i].shape[4] * scaley + ny) -
+                            (map_regions[i].shape[2] * scaley + ny));
+             break;
+             case REG_POLY: 
+             ctx.beginPath();
+
+             //First point begin the polygon, note that coords comes in array of pairs
+             ctx.moveTo(
+               map_regions[i].shape[1][0] * scalex + nx, 
+               map_regions[i].shape[1][1] * scaley + ny);
+
+             //Lines to the other points
+             for(var j = 2; j < map_regions[i].shape.length; j++) {
+               ctx.lineTo(
+                 map_regions[i].shape[j][0] * scalex + nx, 
+                 map_regions[i].shape[j][1] * scaley + ny);
+             }
+
+             ctx.closePath();
+             ctx.stroke();
+             break;
+             case REG_POLY_LIST:
+             var shape = map_regions[i].shape;
+
+             //Every element contain a polygon
+             for(var j = 1; j < shape.length; j++) {
+               ctx.beginPath();
+               //Begin each polygon
+               ctx.moveTo(
+                 shape[j][0][0] * scalex + nx, 
+                 shape[j][0][1] * scaley + ny);
+
+               //Lines between the coordinate pairs
+               for(var k = 1; k < shape[j].length; k++) {
+                 ctx.lineTo(
+                   shape[j][k][0] * scalex + nx, 
+                   shape[j][k][1] * scaley + ny);
+               }
+               ctx.closePath();
+               ctx.stroke();
+             }
+             break;
+             default: break;
+         }
+       }
      }
 
      /**
@@ -429,7 +492,7 @@
          }
        }
 
-                         return null;
+       return null;
      }
     </script>
   </body>
