@@ -35,8 +35,21 @@
        white-space: nowrap;
      }
 
-     .hidden {
+     .management_link {
+       display: block;
+     }
+
+     .view_mode_hide, .hidden, .management_link.hidden {
        display: none;
+     }
+
+     .create_edit_modal {
+       background-color: #a98781;
+       width: 75%;
+       padding: 10px;
+       position: fixed;
+       top: 50%;
+       left: 12.25%;
      }
 
      #map_controls, #regions_control {
@@ -64,6 +77,8 @@
     
     <aside>
       <div id="map_controls">
+        <a href="#" class="add_category view_mode_hide">Add category</a>
+
         <div id="map_links">
         </div>
 
@@ -73,6 +88,7 @@
 
       <div id="regions_control">
         <h2>Regions</h2>
+        <a href="#" class="add_region view_mode_hide">Add region</a>
         <dl id="regions_list">
         </dl>
       </div>
@@ -82,11 +98,17 @@
       </div>
     </aside>
 
-    <div id="save_load_box" class="hidden">
+    <div id="save_load_box" class="view_mode_hide">
       <textarea id="save_load_tb"></textarea>
       <button id="save_button" type="button">Save</button>
       <button id="load_button" type="button">Load</button>
       <button id="clear_button" type="button">Clear</button>
+    </div>
+
+    <div class="create_edit_modal hidden">
+      <h1 id="create_edit_header"></h1>
+      <div id="c_e_body">
+      </div>
     </div>
 
     <script>
@@ -257,6 +279,20 @@
            header.appendChild(document.createTextNode(obj.name));
 
            document.getElementById('map_links').appendChild(header);
+
+           //Edit link
+           var edit_cat = document.createElement('a');
+           edit_cat.setAttribute('href', '#');
+           edit_cat.className = "management_link view_mode_hide";
+           edit_cat.appendChild(document.createTextNode('Edit'));
+           document.getElementById('map_links').appendChild(edit_cat);
+
+           //Add new item link
+           var add_item = document.createElement('a');
+           add_item.setAttribute('href', '#');
+           add_item.className = "management_link view_mode_hide";
+           add_item.appendChild(document.createTextNode('Add item'));
+           document.getElementById('map_links').appendChild(add_item);
 
            //List where the markers go
            var list = document.createElement('ul');
@@ -581,7 +617,15 @@
       * Set up the editor
       */
      function EditorSetUp() {
-       document.getElementById("save_load_box").className = "";
+       //Show the editor stuff
+       var elems = document.getElementsByTagName('*'), i;
+       for (i in elems) {
+         if((' ' + elems[i].className + ' ').indexOf(' view_mode_hide ')
+           > -1) {
+             elems[i].className =
+               elems[i].className.replace( /(?:^|\s)view_mode_hide(?!\S)/g , '' );
+           }
+       }
 
        //Put everything in the textbox
        document.getElementById("save_button").addEventListener("click", function() {
