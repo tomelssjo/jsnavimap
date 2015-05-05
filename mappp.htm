@@ -7,18 +7,48 @@
      html, body {
        width:  100%;
        height: 100%;
-       margin: 0px;
+       margin: 0;
      }
 
-     #map_controls {
-       position: absolute;
+     canvas {
+       width: auto;
+       overflow: hidden;
+     }
+
+     aside {
+       width: 10em;
+       float: right;
+       overflow: hidden;
+     }
+
+     input {
+       width: 100%;
+     }
+
+     dt {
+       float: left;
+       clear: left;
+       white-space: nowrap;
+     }
+
+     dd {
+       white-space: nowrap;
+     }
+
+     .hidden {
+       display: none;
+     }
+
+     #map_controls, #regions_control {
        background-color: rgba(149, 193, 168, 0.6);
-       left: 0;
-       top: 0;
        padding: 5px;
      }
 
-     #map_controls h2 {
+     #regions_control {
+       margin-top: 10px;
+     }
+
+     #map_controls h2, #regions_control h2 {
        font-size: 12pt;
        color: #36114D;
      }
@@ -32,12 +62,31 @@
   <body>
     <canvas id="map_canvas"></canvas>
     
-    <div id="map_controls">
-      <div id="map_links">
+    <aside>
+      <div id="map_controls">
+        <div id="map_links">
+        </div>
+
+        <h2>Your position</h2>
+        <input type="text" id="custom_pos" placeholder="region x z">
       </div>
 
-      <h2>Your position</h2>
-      <input type="text" id="custom_pos" placeholder="region x y">
+      <div id="regions_control">
+        <h2>Regions</h2>
+        <dl id="regions_list">
+        </dl>
+      </div>
+
+      <div>
+        <a id="editormode" href="#">Editormode</a>
+      </div>
+    </aside>
+
+    <div id="save_load_box" class="hidden">
+      <textarea id="save_load_tb"></textarea>
+      <button id="save_button" type="button">Save</button>
+      <button id="load_button" type="button">Load</button>
+      <button id="clear_button" type="button">Clear</button>
     </div>
 
     <script>
@@ -179,189 +228,222 @@
      //Store every marker by a unique key 'name', often similar to the name attribute
      var name_indexed_markers = {};
 
-     //List all categories as HTML elements
-     for (var key in m_categories) {
-       if(m_categories.hasOwnProperty(key)) {
-         //The category object
-         var obj = m_categories[key];
+     //Editormode link
+     document.getElementById("editormode").addEventListener("click", EditorSetUp);
 
-         //Create category header
-         var header = document.createElement('h2');
-         header.appendChild(document.createTextNode(obj.name));
+     //Load everything
+     loadMapItems();
+     
+     /***/
 
-         document.getElementById('map_links').appendChild(header);
+     /**
+      * /Re/loads all the stuff that ever gonna be on the map
+      */
+     function loadMapItems() {
+       //Clear up old stuff
+       drawables = [];
 
-         //List where the markers go
-         var list = document.createElement('ul');
-         list.setAttribute('id', 'lst_' + key);
+       document.getElementById("map_links").innerHTML = "";
+       document.getElementById("regions_list").innerHTML = "";
 
-         document.getElementById('map_links').appendChild(list);
-       }
-     }
+       //List all categories as HTML elements
+       for (var key in m_categories) {
+         if(m_categories.hasOwnProperty(key)) {
+           //The category object
+           var obj = m_categories[key];
 
-     //Put the markers in the draw array
-     //and in the HTML list as links
-     for(var i = 0; i < markers.length; i++) {
-       //Fuse togheter the spaces to create the name
-       markers[i].indexName = markers[i].name.replace(/\s+/g, '_');
-       //Remove special characters
-       markers[i].indexName = markers[i].indexName.replace(/\.+/g, '');
-       markers[i].indexName = markers[i].indexName.toLowerCase();
+           //Create category header
+           var header = document.createElement('h2');
+           header.appendChild(document.createTextNode(obj.name));
 
-       //Are there already one such name? Then add a number to it
-       if(name_indexed_markers[markers[i].indexName] != null) {
-         markers[i].indexName += name_indexed_markers.length;
-       }
+           document.getElementById('map_links').appendChild(header);
 
-       //Put the marker in the index array
-       name_indexed_markers[markers[i].indexName] = markers[i];
+           //List where the markers go
+           var list = document.createElement('ul');
+           list.setAttribute('id', 'lst_' + key);
 
-       //Location means there are something to put in drawables
-       //Location could be an array, be aware!
-       var locations = markers[i].location;
-
-       //Since location stores the value in format [x, y]
-       //it is needed to warp it in an array so the single positions do not got looped through
-       if(!Array.isArray(markers[i].location[0])) {
-         locations = [markers[i].location];
-       }
-
-       //Do the marker have an image, else fetch a default one
-       if(markers[i].image == null) {
-         markers[i].image = m_categories[markers[i].category].def_image;
-       }
-
-       var icoObj = null;
-
-       //See if there are a reusable image available
-       for(var j = 0; j < imageMap.length; j++) {
-         if(imageMap[j].src.indexOf(markers[i].image, imageMap[j].length - markers[i].image.length)
-           !== -1) {
-           icoObj = imageMap[j];
-           break;
+           document.getElementById('map_links').appendChild(list);
          }
        }
 
-       //Store the image for future use
-       if(icoObj == null) {
-         icoObj = new Image();
+       //Put the markers in the draw array
+       //and in the HTML list as links
+       for(var i = 0; i < markers.length; i++) {
+         //Fuse togheter the spaces to create the name
+         markers[i].indexName = markers[i].name.replace(/\s+/g, '_');
+         //Remove special characters
+         markers[i].indexName = markers[i].indexName.replace(/\.+/g, '');
+         markers[i].indexName = markers[i].indexName.toLowerCase();
 
-         icoObj.src = markers[i].image;
+         //Are there already one such name? Then add a number to it
+         if(name_indexed_markers[markers[i].indexName] != null) {
+           markers[i].indexName += name_indexed_markers.length;
+         }
 
-         imageMap.push(icoObj);
-       }
+         //Put the marker in the index array
+         name_indexed_markers[markers[i].indexName] = markers[i];
 
-       //Put every location in the drawable array
-       for(var j = 0; j < locations.length; j++) {
+         //Location means there are something to put in drawables
+         //Location could be an array, be aware!
+         var locations = markers[i].location;
+
+         //Since location stores the value in format [x, y]
+         //it is needed to warp it in an array so the single positions do not got looped through
+         if(!Array.isArray(markers[i].location[0])) {
+           locations = [markers[i].location];
+         }
+
+         //Do the marker have an image, else fetch a default one
+         if(markers[i].image == null) {
+           markers[i].image = m_categories[markers[i].category].def_image;
+         }
+
+         var icoObj = null;
+
+         //See if there are a reusable image available
+         for(var j = 0; j < imageMap.length; j++) {
+           if(imageMap[j].src.indexOf(markers[i].image, imageMap[j].length - markers[i].image.length)
+             !== -1) {
+               icoObj = imageMap[j];
+               break;
+             }
+         }
+
+         //Store the image for future use
+         if(icoObj == null) {
+           icoObj = new Image();
+
+           icoObj.src = markers[i].image;
+
+           imageMap.push(icoObj);
+         }
+
+         //Put every location in the drawable array
+         for(var j = 0; j < locations.length; j++) {
            drawables.push({
              indexName: markers[i].indexName, 
              image: icoObj,
              x: locations[j][0],
              y: locations[j][1]
            });
+         }
+
+         //Add to the HTML list
+         //TODO: Maybe one marker can have several catergories, add to them all
+         var html_list_item = document.createElement('li');
+         html_list_item.style["list-style-image"] = "url(" + markers[i].image  + ")";
+
+         //Link to display them on the map
+         var html_link_item = document.createElement('a');
+         html_link_item.setAttribute('href', '#' + markers[i].indexName);
+         html_link_item.appendChild(document.createTextNode(markers[i].name));
+
+         html_list_item.appendChild(html_link_item);
+
+         document.getElementById('lst_' + markers[i].category).appendChild(html_list_item);
        }
 
-       //Add to the HTML list
-       //TODO: Maybe one marker can have several catergories, add to them all
-       var html_list_item = document.createElement('li');
-       html_list_item.style["list-style-image"] = "url(" + markers[i].image  + ")";
+       //Calculate scale
+       var scale = SCALE / 100;
 
-       //Link to display them on the map
-       var html_link_item = document.createElement('a');
-       html_link_item.setAttribute('href', '#' + markers[i].indexName);
-       html_link_item.appendChild(document.createTextNode(markers[i].name));
+       //When the url change, set fade the markers in the same manner
+       window.addEventListener("hashchange", function() {
+         //Find the button
+         var show_name = window.location.hash.replace("#", "");
 
-       html_list_item.appendChild(html_link_item);
-
-       document.getElementById('lst_' + markers[i].category).appendChild(html_list_item);
-     }
-
-     //Calculate scale
-     var scale = SCALE / 100;
-
-     //When the url change, set fade the markers in the same manner
-     window.addEventListener("hashchange", function() {
-       //Find the button
-       var show_name = window.location.hash.replace("#", "");
-
-       //Loop through the array, move all that are not selected
-       //those will be less visible
-       for(var j = 0; j < drawables.length; j++) {
-         if(drawables[j].indexName != show_name) {
-           drawables[j].fade = true;
-         }
-         else {
-           drawables[j].fade = false;
-         }
-       }
-     });
-
-     //Plot point when typing in the input box
-     document.getElementById("custom_pos").addEventListener("keyup", function() {
-       //There are several ways to separate coords
-       var pos_string = this.value.split(/[\s,;:]/);
-       //Figure out what been typed in the boxes
-       //This just put the first best value in the first best place
-       var x = null;
-       var y = null;
-       var z = null;
-
-       //See what can be found
-       for(var i = 0; i < pos_string.length; i++) {
-         //Get rid of some junk
-         var cur_string = pos_string[i].replace(/[\[\(\{\)\}\]]/, "");
-
-         //Empty string? Carry on
-         if(cur_string == null || cur_string.length < 1) {
-           continue;
-         }
-
-         //We want a number
-         if(!isNaN(parseFloat(cur_string)) && isFinite(cur_string)) {
-           if(x == null) {
-             x = Math.round(cur_string);
-           }
-           else if(z == null) {
-             z = Math.round(cur_string);
-           }
-           else if(y == null) {
-             y = z;
-             z = Math.round(cur_string);
+         //Loop through the array, move all that are not selected
+         //those will be less visible
+         for(var j = 0; j < drawables.length; j++) {
+           if(drawables[j].indexName != show_name) {
+             drawables[j].fade = true;
            }
            else {
-             break;
+             drawables[j].fade = false;
            }
          }
-       }
+       });
 
-       var here_drawable = null;
+       //Plot point when typing in the input box
+       document.getElementById("custom_pos").addEventListener("keyup", function() {
+         //There are several ways to separate coords
+         var pos_string = this.value.split(/[\s,;:]/);
+         //Figure out what been typed in the boxes
+         //This just put the first best value in the first best place
+         var x = null;
+         var y = null;
+         var z = null;
 
-       //Try to find the you marker
-       here_drawable = searchByIndexName(drawables, here_indexName);
+         //See what can be found
+         for(var i = 0; i < pos_string.length; i++) {
+           //Get rid of some junk
+           var cur_string = pos_string[i].replace(/[\[\(\{\)\}\]]/, "");
 
-       //No marker? Create one.
-       if(here_drawable == null) {
-         //TODO: Check if the image already exist
-         var icoObj = new Image();
+           //Empty string? Carry on
+           if(cur_string == null || cur_string.length < 1) {
+             continue;
+           }
 
-         icoObj.src = here_icon;
+           //We want a number
+           if(!isNaN(parseFloat(cur_string)) && isFinite(cur_string)) {
+             if(x == null) {
+               x = Math.round(cur_string);
+             }
+             else if(z == null) {
+               z = Math.round(cur_string);
+             }
+             else if(y == null) {
+               y = z;
+               z = Math.round(cur_string);
+             }
+             else {
+               break;
+             }
+           }
+         }
 
-         imageMap.push(icoObj);
+         var here_drawable = null;
 
-         here_drawable = {
+         //Try to find the you marker
+         here_drawable = searchByIndexName(drawables, here_indexName);
+
+         //No marker? Create one.
+         if(here_drawable == null) {
+           //TODO: Check if the image already exist
+           var icoObj = new Image();
+
+           icoObj.src = here_icon;
+
+           imageMap.push(icoObj);
+
+           here_drawable = {
              indexName: here_indexName, 
              image: icoObj,
              x: x,
              y: z
            };
 
-         drawables.push(here_drawable);
-       }
+           drawables.push(here_drawable);
+         }
 
-       here_drawable.x = x;
-       here_drawable.y = z;
-     });
-     
+         here_drawable.x = x;
+         here_drawable.y = z;
+       });
+
+       //Put markers into the HTML definition list
+       for(var i = 0; i < map_regions.length; i++) {
+         var icon_container = document.createElement('dt');
+         icon_container.appendChild(document.createTextNode('□'));
+         icon_container.style["color"] = map_regions[i].color;
+
+         var text_container = document.createElement('dd');
+         text_container.appendChild(document.createTextNode(map_regions[i].indexName));
+
+         var def_list = document.getElementById("regions_control").getElementsByTagName('dl')[0];
+         def_list.appendChild(icon_container);
+         def_list.appendChild(text_container);
+       }
+     }
+
      /***/
 
      /**
@@ -370,7 +452,7 @@
      function draw() {
        ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
 
-       ctx.canvas.width  = window.innerWidth;
+       ctx.canvas.width  = window.innerWidth - 200;
        ctx.canvas.height = window.innerHeight;
 
        //Scale the map to the screen
@@ -493,6 +575,38 @@
        }
 
        return null;
+     }
+
+     /**
+      * Set up the editor
+      */
+     function EditorSetUp() {
+       document.getElementById("save_load_box").className = "";
+
+       //Put everything in the textbox
+       document.getElementById("save_button").addEventListener("click", function() {
+         document.getElementById("save_load_tb").value = JSON.stringify({
+           categories: m_categories,
+           markers: markers,
+           regions: map_regions
+         });
+       });
+
+       //Set the variables to the ones given in textbox
+       document.getElementById("load_button").addEventListener("click", function() {
+         //Parse the textbox text
+         var parsed_string = JSON.parse(document.getElementById("save_load_tb").value);
+
+         m_categories = parsed_string.categories;
+         markers = parsed_string.markers;
+         map_regions = parsed_string.regions;
+
+         loadMapItems();
+       });
+
+       document.getElementById("clear_button").addEventListener("click", function() {
+         document.getElementById("save_load_tb").value = "";
+       });
      }
     </script>
   </body>
